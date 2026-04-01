@@ -1,12 +1,12 @@
 # Admission Management System
 
-Admission Management System is a monorepo starter for managing academic programs, applicants, seat allocation, and admission confirmation in one place. It is structured to stay beginner-friendly while following production-ready patterns such as service layers, modular routing, and reusable frontend utilities.
+The Admission Management System is a monorepo application for managing academic programs, applicants, seat allocation, and admission confirmation in one place. It is designed to be beginner-friendly while still following clean, production-ready patterns such as modular routing, service layers, and reusable frontend utilities.
 
 ## Project Overview
 
-The application includes:
+This project includes:
 
-- `client/`: React frontend for dashboard and admission workflow views
+- `client/`: React frontend for dashboards and admission workflow screens
 - `server/`: Node.js and Express backend with MongoDB and Mongoose
 - Root-level monorepo scripts powered by `concurrently`
 
@@ -16,7 +16,7 @@ The application includes:
 - Vite
 - React Router
 - Axios
-- TanStack Query (`useQuery`)
+- TanStack Query
 - React Toastify
 - Yup
 - Node.js
@@ -25,75 +25,94 @@ The application includes:
 - Mongoose
 - Nodemon
 
+## Prerequisites
+
+Before running the project, make sure you have:
+
+- Node.js installed
+- npm installed
+- MongoDB Atlas connection string
+
 ## Setup Instructions
 
-1. Install root dependencies:
+### 1. Install root dependencies
 
 ```bash
 npm install
 ```
 
-2. Install frontend dependencies:
+### 2. Install frontend dependencies
 
 ```bash
 cd client
 npm install
 ```
 
-3. Install backend dependencies:
+### 3. Install backend dependencies
 
 ```bash
-cd server
+cd ../server
 npm install
 ```
 
-4. Create the backend environment file:
+### 4. Configure environment variables
 
-```bash
-cd server
-copy .env.example .env
+Create a `.env` file inside the `server/` folder with the following values:
+
+```env
+PORT=5000
+MONGODB_URI=your_mongodb_atlas_connection_string
 ```
 
-5. Start the app from the repository root:
+Create a `.env` file inside the `client/` folder with the following value:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+### 5. Start the application
+
+From the repository root, run:
 
 ```bash
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173` and backend runs at `http://localhost:5000`.
+The application will run on:
 
-## Deployment
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5000`
 
-This project is prepared for a single Vercel deployment with:
+## Recommended Usage Flow
 
-- `client/` built as the frontend
-- `api/index.js` serving the Express backend as a Vercel serverless function
-- frontend API requests using `/api` in production
+Follow this order while testing the project:
 
-### Required Vercel Environment Variable
+1. Create academic programs with seat quotas.
+2. Add applicant details.
+3. Allocate a seat to an applicant based on the selected quota.
+4. Mark the applicant fee status as paid.
+5. Confirm the admission.
+6. Review the updated seat counts and admission records.
 
-Add this in your Vercel project settings before deploying:
+## Seat Allocation Logic
 
-```bash
-MONGODB_URI=your_mongodb_connection_string
-```
+- Each program stores `quotas` and `filledSeats` for `KCET`, `COMEDK`, and `MANAGEMENT`.
+- During seat allocation, the backend checks whether the selected quota has reached its limit.
+- If `filledSeats[quota] >= quotas[quota]`, the request fails with `Quota Full`.
+- If seats are available, the backend increments `filledSeats` immediately and creates an allocated admission record.
+- Admission confirmation is allowed only when the applicant fee status is `Paid`.
+- Admission numbers are generated only once and reused on repeated confirmation attempts.
+- Updated seat counts are returned through the same program API so the UI can display the latest availability.
 
-Do not commit backend secrets into git. Keep the MongoDB URI only in:
+## API Endpoints
 
-- local `server/.env` for development
-- Vercel Environment Variables for production
-
-### Deploy Steps
-
-1. Open the project folder in terminal.
-2. Run `vercel` to link the project if it is not linked yet.
-3. Run `vercel deploy` for a preview deployment or `vercel --prod` for production.
-
-### Production Notes
-
-- Local development uses `http://localhost:5000/api`.
-- Production uses `/api`.
-- Client-side routes such as `/dashboard`, `/programs`, `/applicants`, and `/admissions` are handled by Vercel rewrites.
+- `POST /programs`
+- `GET /programs`
+- `POST /applicants`
+- `GET /applicants`
+- `GET /admissions`
+- `POST /admissions/allocate/:applicantId`
+- `POST /admissions/confirm/:applicantId`
 
 ## Folder Structure
 
@@ -122,26 +141,23 @@ admission-management-system/
   README.md
 ```
 
-## Seat Allocation Logic
+## Assignment Submission Flow
 
-- Each program keeps `quotas` and `filledSeats` for `KCET`, `COMEDK`, and `MANAGEMENT`.
-- During seat allocation, the backend checks whether the selected quota has reached its capacity.
-- If `filledSeats[quota] >= quotas[quota]`, the request fails with `Quota Full`.
-- If seats are available, the backend increments `filledSeats` immediately and creates an allocated admission record.
-- Admission confirmation is allowed only when the applicant fee status is `Paid`.
-- Admission numbers are generated only once and reused on repeated confirmation attempts.
-- Updated seat counts are returned through the same program API so the UI can reflect the latest availability.
+Use the following flow to submit the assignment clearly and professionally:
 
-## API Endpoints
-
-- `POST /programs`
-- `GET /programs`
-- `POST /applicants`
-- `GET /applicants`
-- `GET /admissions`
-- `POST /admissions/allocate/:applicantId`
-- `POST /admissions/confirm/:applicantId`
+1. Push the completed code to a GitHub repository.
+2. Make sure the `README.md` includes:
+   - Project overview
+   - Tech stack
+   - Setup instructions
+   - Environment variables
+   - How to run the project
+   - API endpoints
+   - Application workflow
+3. Verify that the project runs locally without errors.
+4. Add sample screenshots or a short demo video if required by the assignment.
+5. Share the GitHub repository link as your final submission.
 
 ## AI Usage
 
-AI assistance was used to speed up scaffolding, boilerplate generation, and documentation drafting. The resulting structure and business rules are designed to remain readable and maintainable for developers extending the system.
+AI assistance was used to speed up scaffolding, boilerplate generation, and documentation drafting. The final structure and business logic were reviewed to keep the project readable and maintainable.
