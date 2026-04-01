@@ -12,6 +12,22 @@ const quotaSchema = new mongoose.Schema(
 const programSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    programType: {
+      type: String,
+      required: true,
+      enum: ["UG", "PG"],
+      trim: true,
+      default: "UG"
+    },
+    branch: {
+      type: [String],
+      required: true,
+      default: [],
+      validate: {
+        validator: (branches) => Array.isArray(branches) && branches.length > 0,
+        message: "At least one branch is required"
+      }
+    },
     intake: { type: Number, required: true, min: 0 },
     status: {
       type: String,

@@ -27,6 +27,5 @@ export const allocateSeat = async (applicantId) => {
   await program.save();
   await applicant.save();
 
-  return Applicant.findById(applicant._id).populate("programId", "name quotas filledSeats");
+  return Applicant.findById(applicant._id).populate("programId", "name programType branch quotas filledSeats");
 };
-

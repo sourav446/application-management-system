@@ -16,9 +16,20 @@ const getProgramPayload = (payload, existingProgram = null) => {
   const existingQuotas = existingProgram
     ? existingProgram.quotas.toObject()
     : { KCET: 0, COMEDK: 0, MANAGEMENT: 0 };
+  const existingBranches = Array.isArray(existingProgram?.branch) && existingProgram.branch.length
+    ? existingProgram.branch
+    : [existingProgram?.name].filter(Boolean);
+
+  const branchSource = Array.isArray(payload.branch) ? payload.branch : existingBranches;
+  const branch = branchSource
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index);
 
   return {
     name: (payload.name ?? existingProgram?.name ?? "").trim(),
+    programType: (payload.programType ?? existingProgram?.programType ?? "UG").trim().toUpperCase(),
+    branch,
     intake: Number(payload.intake ?? existingProgram?.intake ?? 0),
     status: payload.status ?? existingProgram?.status ?? "active",
     quotas: buildQuotaObject({
@@ -28,9 +39,17 @@ const getProgramPayload = (payload, existingProgram = null) => {
   };
 };
 
-const validateProgramPayload = ({ name, intake, status, quotas }) => {
+const validateProgramPayload = ({ name, programType, branch, intake, status, quotas }) => {
   if (!name) {
     return "Program name is required";
+  }
+
+  if (!["UG", "PG"].includes(programType)) {
+    return "Program type is required";
+  }
+
+  if (!Array.isArray(branch) || branch.length === 0) {
+    return "At least one branch is required";
   }
 
   if (Number.isNaN(intake) || intake < 1) {
@@ -120,6 +139,8 @@ export const createProgram = async (req, res, next) => {
 
     const program = await Program.create({
       name: payload.name,
+      programType: payload.programType,
+      branch: payload.branch,
       intake: payload.intake,
       status: payload.status,
       quotas: payload.quotas
@@ -135,12 +156,21 @@ export const getPrograms = async (req, res, next) => {
   try {
     const filter = {};
     const fetchAll = req.query.limit === "all";
+    const normalizedDegreeType = String(req.query.degreeType || "").trim().toUpperCase();
     const { page, limit, skip } = fetchAll
       ? { page: 1, limit: 10, skip: 0 }
       : buildPagination(req.query);
 
     if (["active", "inactive"].includes(req.query.status)) {
       filter.status = req.query.status;
+    }
+
+    if (["UG", "PG"].includes(req.query.programType)) {
+      filter.programType = req.query.programType;
+    }
+
+    if (["UG", "PG"].includes(normalizedDegreeType)) {
+      filter.programType = normalizedDegreeType;
     }
 
     const programQuery = Program.find(filter).sort({ createdAt: -1 }).lean();
@@ -249,6 +279,8 @@ export const updateProgram = async (req, res, next) => {
       req.params.id,
       {
         name: nextState.name,
+        programType: nextState.programType,
+        branch: nextState.branch,
         intake: nextState.intake,
         status: nextState.status,
         quotas: nextState.quotas

@@ -4,7 +4,6 @@ import Pagination from "../components/common/Pagination";
 import PageHeader from "../components/common/PageHeader";
 import SpinnerLoader from "../components/common/SpinnerLoader";
 import ApplicantForm from "../components/forms/ApplicantForm";
-import { getPrograms } from "../api/programApi";
 import {
   createApplicant,
   getApplicants,
@@ -14,13 +13,12 @@ import {
 
 function Applicants() {
   const [applicants, setApplicants] = useState([]);
-  const [programs, setPrograms] = useState([]);
   const [isApplicantsLoading, setIsApplicantsLoading] = useState(true);
-  const [isProgramsLoading, setIsProgramsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageError, setPageError] = useState("");
   const [formSubmitErrors, setFormSubmitErrors] = useState({});
+  const [degreeType, setDegreeType] = useState("all");
   const [quotaFilter, setQuotaFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -31,6 +29,7 @@ function Applicants() {
 
     try {
       const data = await getApplicants({
+        degreeType,
         quotaType: quotaFilter,
         admissionStatus: statusFilter,
         page,
@@ -48,30 +47,13 @@ function Applicants() {
     }
   };
 
-  const loadPrograms = async () => {
-    setIsProgramsLoading(true);
-
-    try {
-      const data = await getPrograms({ status: "all", limit: "all" });
-      setPrograms(data.items || []);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to fetch programs");
-    } finally {
-      setIsProgramsLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadApplicants();
-  }, [quotaFilter, statusFilter, page]);
-
-  useEffect(() => {
-    loadPrograms();
-  }, []);
+  }, [degreeType, quotaFilter, statusFilter, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [quotaFilter, statusFilter]);
+  }, [degreeType, quotaFilter, statusFilter]);
 
   const handleCreateApplicant = async (payload) => {
     setIsSubmitting(true);
@@ -92,6 +74,8 @@ function Applicants() {
         setFormSubmitErrors({ quotaType: message });
       } else if (message === "Program not found") {
         setFormSubmitErrors({ programId: message });
+      } else if (message === "Selected branch is invalid for this program") {
+        setFormSubmitErrors({ branch: message });
       } else {
         toast.error(message);
       }
@@ -150,7 +134,7 @@ function Applicants() {
       <PageHeader
         title="Applications"
         description="Manage applications, keep document and fee states updated, and prepare records for admission allocation."
-        chip={`${applicantsCount} Applications`}
+        chip={`${pagination?.totalItems ?? applicants.length} Applications`}
       />
 
       <section className="rounded-xl border border-slate-200/70 bg-white/85 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -161,6 +145,16 @@ function Applicants() {
             </h3>
           </div>
           <div className="flex items-center gap-3">
+            <select
+              value={degreeType}
+              onChange={(event) => setDegreeType(event.target.value)}
+              className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none"
+            >
+              <option value="all">All Degrees</option>
+              <option value="ug">UG</option>
+              <option value="pg">PG</option>
+            </select>
+
             <select
               value={quotaFilter}
               onChange={(event) => setQuotaFilter(event.target.value)}
@@ -194,7 +188,7 @@ function Applicants() {
               Create Application
             </button>
           </div>
-          {isApplicantsLoading || isProgramsLoading ? (
+          {isApplicantsLoading ? (
             <SpinnerLoader inline size="sm" label="Loading data..." />
           ) : null}
         </div>
@@ -217,6 +211,7 @@ function Applicants() {
                     <th className="px-4 py-3 text-left">Name</th>
                     <th className="px-4 py-3 text-left">Contact</th>
                     <th className="px-4 py-3 text-left">Program</th>
+                    <th className="px-4 py-3 text-left">Branch</th>
                     <th className="px-4 py-3 text-left">Quota</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-left">Documents</th>
@@ -235,8 +230,9 @@ function Applicants() {
                       </td>
 
                       <td
-                      title={applicant?.name}
-                        className="px-4 py-3 font-medium text-slate-900 cursor-default">
+                        title={applicant?.name}
+                        className="cursor-default px-4 py-3 font-medium text-slate-900"
+                      >
                         {applicant.name.length > 20
                           ? applicant.name.slice(0, 20) + "..."
                           : applicant.name}
@@ -252,7 +248,11 @@ function Applicants() {
 
                       <td className="px-4 py-3">
                         {applicant.programId?.name || "Not assigned"}
+                        <br />
+                        <span className="text-xs text-slate-500">{applicant.programId?.programType || "UG"}</span>
                       </td>
+
+                      <td className="px-4 py-3">{applicant.branch || "-"}</td>
 
                       <td className="px-4 py-3">{applicant.quotaType}</td>
 
@@ -306,7 +306,7 @@ function Applicants() {
           </div>
         ) : (
           <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-8 text-center text-sm leading-6 text-slate-600">
-            No applications found yet.
+            No applications found for the selected filters.
           </div>
         )}
       </section>
@@ -318,7 +318,6 @@ function Applicants() {
           setFormSubmitErrors({});
         }}
         onSubmit={handleCreateApplicant}
-        programs={programs}
         isSubmitting={isSubmitting}
         submitErrors={formSubmitErrors}
       />

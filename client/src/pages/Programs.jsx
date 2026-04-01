@@ -17,18 +17,19 @@ function Programs() {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [status, setStatus] = useState("all");
+  const [degreeType, setDegreeType] = useState("all");
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["getPrograms", status, page],
-    queryFn: () => getPrograms({ status, page, limit: 10 }),
+    queryKey: ["getPrograms", status, degreeType, page],
+    queryFn: () => getPrograms({ status, degreeType, page, limit: 10 }),
   });
   const programs = data?.items || [];
   const pagination = data?.pagination;
 
   useEffect(() => {
     setPage(1);
-  }, [status]);
+  }, [status, degreeType]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -110,7 +111,7 @@ function Programs() {
     <>
       <PageHeader
         title="Programs"
-        description="Monitor intake, quota distribution, and live seat availability."
+        description="Monitor intake, quota distribution, program type, and live seat availability."
         chip={`${pagination?.totalItems ?? programs.length} Programs`}
       />
 
@@ -120,6 +121,16 @@ function Programs() {
             Program Capacity Overview
           </h3>
           <div className="flex items-center gap-5">
+            <select
+              value={degreeType}
+              onChange={(event) => setDegreeType(event.target.value)}
+              className="rounded-md border border-slate-200 bg-white px-4 py-1 text-sm text-slate-900 outline-none"
+            >
+              <option value="all">All Degrees</option>
+              <option value="ug">UG</option>
+              <option value="pg">PG</option>
+            </select>
+
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
@@ -146,123 +157,126 @@ function Programs() {
           <SpinnerLoader label="Loading programs..." />
         ) : programs.length ? (
           <div className="mt-4">
-            <div className="overflow-x-auto max-h-98 hide-scrollbar">
-            <table className="min-w-full overflow-hidden rounded-xl border border-slate-200 text-sm">
-              <thead className="bg-slate-100 text-slate-700">
-                <tr>
-                  <th className="px-4 py-3 text-left">S/No</th>
-                  <th className="px-4 py-3 text-left">Course</th>
-                  <th className="px-4 py-3 text-left">Intake</th>
-                  <th className="px-4 py-3 text-left">KCET</th>
-                  <th className="px-4 py-3 text-left">COMEDK</th>
-                  <th className="px-4 py-3 text-left">Management</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Actions</th>
-                </tr>
-              </thead>
+            <div className="max-h-98 overflow-x-auto hide-scrollbar">
+              <table className="min-w-full overflow-hidden rounded-xl border border-slate-200 text-sm">
+                <thead className="bg-slate-100 text-slate-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left">S/No</th>
+                    <th className="px-4 py-3 text-left">Course</th>
+                    <th className="px-4 py-3 text-left">Type</th>
+                    <th className="px-4 py-3 text-left">Branch / Specialization</th>
+                    <th className="px-4 py-3 text-left">Intake</th>
+                    <th className="px-4 py-3 text-left">KCET</th>
+                    <th className="px-4 py-3 text-left">COMEDK</th>
+                    <th className="px-4 py-3 text-left">Management</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-left">Actions</th>
+                  </tr>
+                </thead>
 
-              <tbody className="bg-white">
-                {programs.map((program, index) => (
-                  <tr
-                    key={program._id}
-                    className="border-t border-t-gray-300 hover:bg-slate-50"
-                  >
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      {program.name}
-                    </td>
-                    <td className="px-4 py-3">{program.intake}</td>
-                    <td className="px-4 py-3">
-                      {program.applicationCounts?.KCET ?? 0}/{program.quotas.KCET}
-                    </td>
-                    <td className="px-4 py-3">
-                      {program.applicationCounts?.COMEDK ?? 0}/{program.quotas.COMEDK}
-                    </td>
-                    <td className="px-4 py-3">
-                      {program.applicationCounts?.MANAGEMENT ?? 0}/{program.quotas.MANAGEMENT}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          toggleProgramStatusMutation.mutate({
-                            id: program._id,
-                            nextStatus:
-                              program.status === "active"
-                                ? "inactive"
-                                : "active",
-                          })
-                        }
-                        disabled={toggleProgramStatusMutation.isPending}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                          program.status === "active"
-                            ? "bg-emerald-500"
-                            : "bg-slate-300"
-                        } ${
-                          toggleProgramStatusMutation.isPending
-                            ? "opacity-60 cursor-not-allowed"
-                            : "cursor-pointer"
-                        }`}
-                      >
-                        {/* Toggle circle */}
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                            program.status === "active"
-                              ? "translate-x-6"
-                              : "translate-x-1"
-                          }`}
-                        />
-                      </button>
-                    </td>
-                    <td className="relative px-4 py-3">
-                      <div
-                        className="inline-block"
-                        ref={activeMenuId === program._id ? menuRef : null}
-                      >
+                <tbody className="bg-white">
+                  {programs.map((program, index) => (
+                    <tr
+                      key={program._id}
+                      className="border-t border-t-gray-300 hover:bg-slate-50"
+                    >
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {(page - 1) * 10 + index + 1}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {program.name}
+                      </td>
+                      <td className="px-4 py-3">{program.programType || "UG"}</td>
+                      <td className="px-4 py-3">{(program.branch || []).join(", ") || "-"}</td>
+                      <td className="px-4 py-3">{program.intake}</td>
+                      <td className="px-4 py-3">
+                        {program.applicationCounts?.KCET ?? 0}/{program.quotas.KCET}
+                      </td>
+                      <td className="px-4 py-3">
+                        {program.applicationCounts?.COMEDK ?? 0}/{program.quotas.COMEDK}
+                      </td>
+                      <td className="px-4 py-3">
+                        {program.applicationCounts?.MANAGEMENT ?? 0}/{program.quotas.MANAGEMENT}
+                      </td>
+                      <td className="px-4 py-3">
                         <button
                           type="button"
                           onClick={() =>
-                            setActiveMenuId((current) =>
-                              current === program._id ? null : program._id,
-                            )
+                            toggleProgramStatusMutation.mutate({
+                              id: program._id,
+                              nextStatus:
+                                program.status === "active"
+                                  ? "inactive"
+                                  : "active",
+                            })
                           }
-                          className="rounded-lg px-2 py-1 hover:bg-slate-200"
+                          disabled={toggleProgramStatusMutation.isPending}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                            program.status === "active"
+                              ? "bg-emerald-500"
+                              : "bg-slate-300"
+                          } ${
+                            toggleProgramStatusMutation.isPending
+                              ? "cursor-not-allowed opacity-60"
+                              : "cursor-pointer"
+                          }`}
                         >
-                          ...
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                              program.status === "active"
+                                ? "translate-x-6"
+                                : "translate-x-1"
+                            }`}
+                          />
                         </button>
+                      </td>
+                      <td className="relative px-4 py-3">
+                        <div
+                          className="inline-block"
+                          ref={activeMenuId === program._id ? menuRef : null}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveMenuId((current) =>
+                                current === program._id ? null : program._id,
+                              )
+                            }
+                            className="rounded-lg px-2 py-1 hover:bg-slate-200"
+                          >
+                            ...
+                          </button>
 
-                        {activeMenuId === program._id ? (
-                          <div className="absolute right-0 z-10 mt-2 w-32 rounded-lg border bg-white py-1 shadow-md">
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(program)}
-                              className="block w-full px-3 py-2 text-left hover:bg-slate-100"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteClick(program)}
-                              className="block w-full px-3 py-2 text-left text-red-500 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {activeMenuId === program._id ? (
+                            <div className="absolute right-0 z-10 mt-2 w-32 rounded-lg border bg-white py-1 shadow-md">
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(program)}
+                                className="block w-full px-3 py-2 text-left hover:bg-slate-100"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteClick(program)}
+                                className="block w-full px-3 py-2 text-left text-red-500 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <Pagination pagination={pagination} onPageChange={setPage} />
           </div>
         ) : (
           <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-8 text-center text-sm leading-6 text-slate-600">
-            No programs found for the selected status.
+            No programs found for the selected filters.
           </div>
         )}
       </section>

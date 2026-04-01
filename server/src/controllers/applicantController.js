@@ -12,6 +12,7 @@ const validateApplicantPayload = (payload) => {
     "entryType",
     "quotaType",
     "programId",
+    "branch",
     "marks"
   ];
 
@@ -33,6 +34,7 @@ const normalizeApplicantPayload = (payload) => ({
   entryType: payload.entryType,
   quotaType: payload.quotaType,
   programId: payload.programId,
+  branch: payload.branch?.trim() || "",
   marks: payload.marks
 });
 
@@ -97,6 +99,10 @@ export const createApplicant = async (req, res, next) => {
       return res.status(404).json({ message: "Program not found" });
     }
 
+    if (!program.branch.includes(payload.branch)) {
+      return res.status(400).json({ message: "Selected branch is invalid for this program" });
+    }
+
     const duplicateErrors = await checkDuplicateApplicantFields({
       programId: payload.programId,
       phone: payload.phone,
@@ -131,7 +137,7 @@ export const createApplicant = async (req, res, next) => {
 
     const populatedApplication = await Applicant.findById(application._id).populate(
       "programId",
-      "name"
+      "name programType branch"
     );
 
     res.status(201).json(populatedApplication);
@@ -143,6 +149,7 @@ export const createApplicant = async (req, res, next) => {
 export const getApplicants = async (req, res, next) => {
   try {
     const filter = {};
+    const normalizedDegreeType = String(req.query.degreeType || "").trim().toUpperCase();
     const { page, limit, skip } = buildPagination(req.query);
 
     if (["KCET", "COMEDK", "MANAGEMENT"].includes(req.query.quotaType)) {
@@ -153,9 +160,28 @@ export const getApplicants = async (req, res, next) => {
       filter.admissionStatus = req.query.admissionStatus;
     }
 
+    let programIds = null;
+
+    if (["UG", "PG"].includes(normalizedDegreeType)) {
+      const matchingPrograms = await Program.find({ programType: normalizedDegreeType }).select("_id").lean();
+      programIds = matchingPrograms.map((program) => String(program._id));
+    }
+
+    if (req.query.programId) {
+      programIds = programIds ? programIds.filter((id) => id === req.query.programId) : [req.query.programId];
+    }
+
+    if (programIds) {
+      filter.programId = { $in: programIds };
+    }
+
+    if (req.query.branch) {
+      filter.branch = req.query.branch;
+    }
+
     const [applications, totalItems] = await Promise.all([
       Applicant.find(filter)
-        .populate("programId", "name")
+        .populate("programId", "name programType branch")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -191,7 +217,7 @@ export const updateDocumentsStatus = async (req, res, next) => {
 
     application.documentsStatus = documentsStatus;
     await application.save();
-    await application.populate("programId", "name");
+    await application.populate("programId", "name programType branch");
 
     res.status(200).json(application);
   } catch (error) {
@@ -219,11 +245,10 @@ export const updateFeeStatus = async (req, res, next) => {
 
     application.feeStatus = feeStatus;
     await application.save();
-    await application.populate("programId", "name");
+    await application.populate("programId", "name programType branch");
 
     res.status(200).json(application);
   } catch (error) {
     next(error);
   }
 };
-

@@ -1,4 +1,5 @@
 import Applicant from "../models/Applicant.js";
+import Program from "../models/Program.js";
 import { allocateSeat } from "../services/seatAllocationService.js";
 import { confirmAdmission } from "../services/admissionService.js";
 import { buildPagination, buildPaginationResponse } from "../utils/pagination.js";
@@ -8,7 +9,8 @@ export const getAdmissions = async (req, res, next) => {
     const {
       quotaType = "all",
       programId = "all",
-      admissionStatus = "all"
+      admissionStatus = "all",
+      programType = "all"
     } = req.query;
     const { page, limit, skip } = buildPagination(req.query);
     const filters = {};
@@ -17,17 +19,28 @@ export const getAdmissions = async (req, res, next) => {
       filters.quotaType = quotaType;
     }
 
-    if (programId !== "all") {
-      filters.programId = programId;
-    }
-
     if (admissionStatus !== "all") {
       filters.admissionStatus = admissionStatus;
     }
 
+    let programIds = null;
+
+    if (programType !== "all") {
+      const matchingPrograms = await Program.find({ programType }).select("_id").lean();
+      programIds = matchingPrograms.map((program) => String(program._id));
+    }
+
+    if (programId !== "all") {
+      programIds = programIds ? programIds.filter((id) => id === programId) : [programId];
+    }
+
+    if (programIds) {
+      filters.programId = { $in: programIds };
+    }
+
     const [admissions, totalItems] = await Promise.all([
       Applicant.find(filters)
-        .populate("programId", "name quotas filledSeats")
+        .populate("programId", "name programType branch quotas filledSeats")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),

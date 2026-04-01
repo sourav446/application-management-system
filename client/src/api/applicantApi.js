@@ -19,6 +19,7 @@ export const checkApplicantAvailability = async ({ programId, phone, email }) =>
 export const getApplicants = async ({
   quotaType = "all",
   admissionStatus = "all",
+  degreeType = "all",
   page = 1,
   limit = 10
 } = {}) => {
@@ -30,6 +31,10 @@ export const getApplicants = async ({
 
   if (admissionStatus !== "all") {
     params.admissionStatus = admissionStatus;
+  }
+
+  if (degreeType !== "all") {
+    params.degreeType = degreeType;
   }
 
   params.page = page;

@@ -26,6 +26,7 @@ function Admission() {
   const [quotaFilter, setQuotaFilter] = useState("all");
   const [programFilter, setProgramFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [programTypeTab, setProgramTypeTab] = useState("UG");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
 
@@ -37,6 +38,7 @@ function Admission() {
         quotaType: quotaFilter,
         programId: programFilter,
         admissionStatus: statusFilter,
+        programType: programTypeTab,
         page,
         limit: 10,
       });
@@ -67,7 +69,7 @@ function Admission() {
 
   useEffect(() => {
     loadAdmissions();
-  }, [quotaFilter, programFilter, statusFilter, page]);
+  }, [quotaFilter, programFilter, statusFilter, programTypeTab, page]);
 
   useEffect(() => {
     loadPrograms();
@@ -75,7 +77,12 @@ function Admission() {
 
   useEffect(() => {
     setPage(1);
-  }, [quotaFilter, programFilter, statusFilter]);
+  }, [quotaFilter, programFilter, statusFilter, programTypeTab]);
+
+  const visiblePrograms = useMemo(
+    () => programs.filter((program) => (program.programType || "UG") === programTypeTab),
+    [programTypeTab, programs]
+  );
 
   const handleAllocate = async (applicantId) => {
     setActiveActionId(`allocate-${applicantId}`);
@@ -126,7 +133,7 @@ function Admission() {
       <PageHeader
         title="Admissions"
         description="Allocate seats, confirm admissions, and move applications through the final admission workflow."
-        chip={`${admissionsCount} Applications`}
+        chip={`${admissionsCount} ${programTypeTab} Applications`}
       />
 
       <section className="rounded-xl border border-slate-200/70 bg-white/85 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -135,6 +142,25 @@ function Admission() {
             <h3 className="m-0 text-lg font-semibold text-slate-900">
               Admission Workflow
             </h3>
+            <div className="mt-3 inline-flex rounded-xl bg-slate-100 p-1">
+              {["UG", "PG"].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setProgramTypeTab(tab);
+                    setProgramFilter("all");
+                  }}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    programTypeTab === tab
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -155,7 +181,7 @@ function Admission() {
               className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none"
             >
               <option value="all">All Programs</option>
-              {programs.map((program) => (
+              {visiblePrograms.map((program) => (
                 <option key={program._id} value={program._id}>
                   {program.name}
                 </option>
@@ -196,6 +222,7 @@ function Admission() {
                     <th className="px-4 py-3 text-left">S.No</th>
                     <th className="px-4 py-3 text-left">Name</th>
                     <th className="px-4 py-3 text-left">Program</th>
+                    <th className="px-4 py-3 text-left">Branch</th>
                     <th className="px-4 py-3 text-left">Quota</th>
                     <th className="px-4 py-3 text-left">Status</th>
                     <th className="px-4 py-3 text-left">Documents</th>
@@ -219,7 +246,7 @@ function Admission() {
                         className="border-t border-slate-200 hover:bg-slate-50"
                       >
                         <td className="px-4 py-3">{serialNumber}</td>
-                        <td title={applicant?.name} className="px-4 py-3 font-medium text-slate-900 cursor-default">
+                        <td title={applicant?.name} className="cursor-default px-4 py-3 font-medium text-slate-900">
                            {applicant.name
                           ? applicant.name.length > 22
                             ? `${applicant.name.slice(0, 22)}...`
@@ -229,6 +256,7 @@ function Admission() {
                         <td className="px-4 py-3">
                           {applicant.programId?.name || "Not assigned"}
                         </td>
+                        <td className="px-4 py-3">{applicant.branch || "-"}</td>
                         <td className="px-4 py-3">{applicant.quotaType}</td>
                         <td className="px-4 py-3">
                           <span
@@ -298,7 +326,7 @@ function Admission() {
           </div>
         ) : (
           <div className="mt-4 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-8 text-center text-sm leading-6 text-slate-600">
-            No applications yet.
+            No {programTypeTab} applications yet.
           </div>
         )}
       </section>

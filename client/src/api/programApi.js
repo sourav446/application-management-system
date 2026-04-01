@@ -1,9 +1,17 @@
 import axiosInstance from "./axiosInstance";
 
-export const getPrograms = async ({ status = "all", page = 1, limit = 10 } = {}) => {
+export const getPrograms = async ({
+  status = "all",
+  programType = "all",
+  degreeType = "all",
+  page = 1,
+  limit = 10
+} = {}) => {
   const response = await axiosInstance.get("/programs", {
     params: {
       ...(status && status !== "all" ? { status } : {}),
+      ...(programType && programType !== "all" ? { programType } : {}),
+      ...(degreeType && degreeType !== "all" ? { degreeType } : {}),
       page,
       limit
     }
