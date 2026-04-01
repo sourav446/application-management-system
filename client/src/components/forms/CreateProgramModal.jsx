@@ -6,6 +6,9 @@ import { createProgram, updateProgram } from "../../api/programApi";
 
 const emptyFormState = {
   name: "",
+  programType: "UG",
+  branch: [],
+  branchInput: "",
   intake: "",
   quotas: {
     KCET: "",
@@ -21,6 +24,9 @@ const mapProgramToFormState = (program) => {
 
   return {
     name: program.name || "",
+    programType: program.programType || "UG",
+    branch: Array.isArray(program.branch) ? program.branch : [],
+    branchInput: "",
     intake: String(program.intake ?? ""),
     quotas: {
       KCET: String(program.quotas?.KCET ?? ""),
@@ -32,6 +38,11 @@ const mapProgramToFormState = (program) => {
 
 const programSchema = yup.object({
   name: yup.string().trim().required("Program name is required"),
+  programType: yup.string().oneOf(["UG", "PG"]).required("Program type is required"),
+  branch: yup
+    .array()
+    .of(yup.string().trim().required())
+    .min(1, "At least one branch is required"),
   intake: yup
     .number()
     .transform((value, originalValue) => (originalValue === "" ? NaN : value))
@@ -131,16 +142,81 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
     }));
   };
 
+  const handleBranchInputChange = (event) => {
+    const { value } = event.target;
+    setFormData((current) => ({
+      ...current,
+      branchInput: value
+    }));
+    setErrors((current) => ({
+      ...current,
+      branch: ""
+    }));
+  };
+
+  const addBranchValue = (value) => {
+    const nextBranch = value.trim();
+    if (!nextBranch) {
+      return;
+    }
+
+    setFormData((current) => {
+      if (current.branch.includes(nextBranch)) {
+        return {
+          ...current,
+          branchInput: ""
+        };
+      }
+
+      return {
+        ...current,
+        branch: [...current.branch, nextBranch],
+        branchInput: ""
+      };
+    });
+    setErrors((current) => ({
+      ...current,
+      branch: ""
+    }));
+  };
+
+  const handleBranchKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addBranchValue(formData.branchInput);
+    }
+  };
+
+  const handleBranchBlur = () => {
+    if (formData.branchInput.trim()) {
+      addBranchValue(formData.branchInput);
+    }
+  };
+
+  const handleRemoveBranch = (branchName) => {
+    setFormData((current) => ({
+      ...current,
+      branch: current.branch.filter((item) => item !== branchName)
+    }));
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const normalizedBranch = [
+      ...formData.branch,
+      ...(formData.branchInput.trim() ? [formData.branchInput.trim()] : [])
+    ].filter((item, index, list) => item && list.indexOf(item) === index);
+
     const payload = {
       name: formData.name.trim(),
+      programType: formData.programType,
+      branch: normalizedBranch,
       intake: Number(formData.intake),
       quotas: {
-      KCET: Number(formData.quotas.KCET),
-      COMEDK: Number(formData.quotas.COMEDK),
-      MANAGEMENT: Number(formData.quotas.MANAGEMENT)
+        KCET: Number(formData.quotas.KCET),
+        COMEDK: Number(formData.quotas.COMEDK),
+        MANAGEMENT: Number(formData.quotas.MANAGEMENT)
       }
     };
 
@@ -158,8 +234,7 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
       return;
     }
 
-    const totalQuotas =
-      payload.quotas.KCET + payload.quotas.COMEDK + payload.quotas.MANAGEMENT;
+    const totalQuotas = payload.quotas.KCET + payload.quotas.COMEDK + payload.quotas.MANAGEMENT;
 
     if (totalQuotas > payload.intake) {
       setErrors({
@@ -167,14 +242,6 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
       });
       toast.error("Total quota seats cannot be greater than intake");
       return;
-    }
-
-    if (!isEditMode) {
-      payload.filledSeats = {
-        KCET: 0,
-        COMEDK: 0,
-        MANAGEMENT: 0
-      };
     }
 
     programMutation.mutate(payload);
@@ -201,7 +268,7 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
             <p className="mt-2 text-sm leading-6 text-slate-500">
               {isEditMode
                 ? "Update the selected course details from the same modal."
-                : "Add a new academic program with intake and quota allocation details."}
+                : "Add a new academic program with type, branch, intake, and quota allocation details."}
             </p>
           </div>
           <button
@@ -228,6 +295,55 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
                 }`}
               />
               {errors.name ? <p className="mt-1 text-xs text-red-500">{errors.name}</p> : null}
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Program Type</span>
+              <select
+                name="programType"
+                value={formData.programType}
+                onChange={handleFieldChange}
+                className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition ${
+                  errors.programType
+                    ? "border-red-400 focus:border-red-500"
+                    : "border-slate-200 focus:border-blue-500"
+                }`}
+              >
+                <option value="UG">UG</option>
+                <option value="PG">PG</option>
+              </select>
+              {errors.programType ? <p className="mt-1 text-xs text-red-500">{errors.programType}</p> : null}
+            </label>
+
+            <label className="block md:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Branch / Specialization</span>
+              <input
+                type="text"
+                name="branchInput"
+                value={formData.branchInput}
+                onChange={handleBranchInputChange}
+                onKeyDown={handleBranchKeyDown}
+                onBlur={handleBranchBlur}
+                placeholder="Type branch name and press Enter"
+                className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition ${
+                  errors.branch ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-500"
+                }`}
+              />
+              {formData.branch.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.branch.map((branchName) => (
+                    <button
+                      type="button"
+                      key={branchName}
+                      onClick={() => handleRemoveBranch(branchName)}
+                      className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                    >
+                      {branchName} x
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {errors.branch ? <p className="mt-1 text-xs text-red-500">{errors.branch}</p> : null}
             </label>
 
             <label className="block">
@@ -292,8 +408,8 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
                   ? "Updating..."
                   : "Creating..."
                 : isEditMode
-                  ? "Update "
-                  : "Create "}
+                  ? "Update"
+                  : "Create"}
             </button>
           </div>
         </form>

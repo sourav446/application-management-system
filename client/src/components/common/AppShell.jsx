@@ -13,9 +13,10 @@ function AppShell({ children }) {
       <aside className="flex flex-col gap-7 bg-slate-950/95 px-5 py-7 text-slate-50">
         <div>
           <h1 className="m-0 text-2xl font-semibold">
-            Admission Management System
+            XXX College of Engineering
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
+          <p className="text-sm">(Admission Management System)</p>
+          <p className="mt-2 text-xs leading-6 text-slate-300">
             Manage programs, applications, and admission workflows from one
             workspace.
           </p>

@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
+import { getPrograms } from "../../api/programApi";
 import { checkApplicantAvailability } from "../../api/applicantApi";
 
 const initialFormState = {
+  degreeType: "ug",
   name: "",
   email: "",
   phone: "",
@@ -10,6 +12,7 @@ const initialFormState = {
   entryType: "Regular",
   quotaType: "KCET",
   programId: "",
+  branch: "",
   marks: ""
 };
 
@@ -25,6 +28,7 @@ const applicantSchema = yup.object({
   entryType: yup.string().oneOf(entryTypeOptions).required("Entry type is required"),
   quotaType: yup.string().oneOf(quotaTypeOptions).required("Quota type is required"),
   programId: yup.string().required("Please select a program"),
+  branch: yup.string().trim().required("Please select a branch"),
   marks: yup
     .number()
     .transform((value, originalValue) => (originalValue === "" ? NaN : value))
@@ -37,13 +41,14 @@ function ApplicantForm({
   isOpen,
   onClose,
   onSubmit,
-  programs = [],
   isSubmitting = false,
   submitErrors = {}
 }) {
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
   const [availabilityErrors, setAvailabilityErrors] = useState({});
+  const [programs, setPrograms] = useState([]);
+  const [isProgramsLoading, setIsProgramsLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -52,11 +57,34 @@ function ApplicantForm({
 
     setErrors({});
     setAvailabilityErrors({});
-    setFormData((current) => ({
-      ...initialFormState,
-      programId: programs[0]?._id || ""
-    }));
-  }, [isOpen, programs]);
+    setPrograms([]);
+    setFormData(initialFormState);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const loadPrograms = async () => {
+      setIsProgramsLoading(true);
+
+      try {
+        const data = await getPrograms({
+          status: "all",
+          degreeType: formData.degreeType,
+          limit: "all"
+        });
+        setPrograms(data.items || []);
+      } catch {
+        setPrograms([]);
+      } finally {
+        setIsProgramsLoading(false);
+      }
+    };
+
+    loadPrograms();
+  }, [formData.degreeType, isOpen]);
 
   useEffect(() => {
     if (Object.keys(submitErrors).length) {
@@ -94,19 +122,48 @@ function ApplicantForm({
     return () => clearTimeout(timeoutId);
   }, [formData.email, formData.phone, formData.programId, isOpen]);
 
+  const selectedProgram = useMemo(
+    () => programs.find((program) => program._id === formData.programId) || null,
+    [formData.programId, programs]
+  );
+
+  const branchOptions = selectedProgram?.branch || [];
+
   if (!isOpen) {
     return null;
   }
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((current) => ({
-      ...current,
-      [name]: value
-    }));
+    setFormData((current) => {
+      if (name === "degreeType") {
+        return {
+          ...current,
+          degreeType: value,
+          programId: "",
+          branch: ""
+        };
+      }
+
+      if (name === "programId") {
+        return {
+          ...current,
+          programId: value,
+          branch: ""
+        };
+      }
+
+      return {
+        ...current,
+        [name]: value
+      };
+    });
     setErrors((current) => ({
       ...current,
-      [name]: ""
+      [name]: "",
+      ...((name === "programId" || name === "degreeType")
+        ? { programId: "", branch: "" }
+        : {})
     }));
     setAvailabilityErrors((current) => ({
       ...current,
@@ -122,6 +179,7 @@ function ApplicantForm({
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       phone: formData.phone.trim(),
+      branch: formData.branch.trim(),
       marks: Number(formData.marks)
     };
 
@@ -147,7 +205,8 @@ function ApplicantForm({
       return;
     }
 
-    onSubmit(payload);
+    const { degreeType, ...submitPayload } = payload;
+    onSubmit(submitPayload);
   };
 
   const handleClose = () => {
@@ -179,6 +238,21 @@ function ApplicantForm({
 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
           <div className="grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                Degree Type
+              </span>
+              <select
+                name="degreeType"
+                value={formData.degreeType}
+                onChange={handleChange}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-slate-900 outline-none transition focus:border-blue-500"
+              >
+                <option value="ug">UG</option>
+                <option value="pg">PG</option>
+              </select>
+            </label>
+
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">Name</span>
               <input
@@ -291,18 +365,40 @@ function ApplicantForm({
                 name="programId"
                 value={formData.programId}
                 onChange={handleChange}
-                className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition ${
+                disabled={isProgramsLoading}
+                className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 ${
                   errors.programId ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-500"
                 }`}
               >
-                <option value="">Select a program</option>
+                <option value="">{isProgramsLoading ? "Loading programs..." : "Select a program"}</option>
                 {programs.map((program) => (
                   <option key={program._id} value={program._id}>
-                    {program.name}
+                    {program.name} ({program.programType || "UG"})
                   </option>
                 ))}
               </select>
               {errors.programId ? <p className="mt-1 text-xs text-red-500">{errors.programId}</p> : null}
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Branch / Specialization</span>
+              <select
+                name="branch"
+                value={formData.branch}
+                onChange={handleChange}
+                disabled={!formData.programId}
+                className={`w-full rounded-2xl border px-4 py-3 text-sm text-slate-900 outline-none transition disabled:cursor-not-allowed disabled:bg-slate-100 ${
+                  errors.branch ? "border-red-400 focus:border-red-500" : "border-slate-200 focus:border-blue-500"
+                }`}
+              >
+                <option value="">{formData.programId ? "Select a branch" : "Select program first"}</option>
+                {branchOptions.map((branchName) => (
+                  <option key={branchName} value={branchName}>
+                    {branchName}
+                  </option>
+                ))}
+              </select>
+              {errors.branch ? <p className="mt-1 text-xs text-red-500">{errors.branch}</p> : null}
             </label>
 
             <label className="block">

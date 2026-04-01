@@ -21,6 +21,7 @@ const applicantSchema = new mongoose.Schema(
       ref: "Program",
       required: true
     },
+    branch: { type: String, required: true, trim: true },
     marks: { type: Number, required: true, min: 0 },
     documentsStatus: {
       type: String,

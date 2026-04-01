@@ -62,6 +62,39 @@ npm run dev
 
 Frontend runs at `http://localhost:5173` and backend runs at `http://localhost:5000`.
 
+## Deployment
+
+This project is prepared for a single Vercel deployment with:
+
+- `client/` built as the frontend
+- `api/index.js` serving the Express backend as a Vercel serverless function
+- frontend API requests using `/api` in production
+
+### Required Vercel Environment Variable
+
+Add this in your Vercel project settings before deploying:
+
+```bash
+MONGODB_URI=your_mongodb_connection_string
+```
+
+Do not commit backend secrets into git. Keep the MongoDB URI only in:
+
+- local `server/.env` for development
+- Vercel Environment Variables for production
+
+### Deploy Steps
+
+1. Open the project folder in terminal.
+2. Run `vercel` to link the project if it is not linked yet.
+3. Run `vercel deploy` for a preview deployment or `vercel --prod` for production.
+
+### Production Notes
+
+- Local development uses `http://localhost:5000/api`.
+- Production uses `/api`.
+- Client-side routes such as `/dashboard`, `/programs`, `/applicants`, and `/admissions` are handled by Vercel rewrites.
+
 ## Folder Structure
 
 ```text

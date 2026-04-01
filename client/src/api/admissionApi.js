@@ -4,6 +4,7 @@ export const getAdmissions = async ({
   quotaType = "all",
   programId = "all",
   admissionStatus = "all",
+  programType = "all",
   page = 1,
   limit = 10,
 } = {}) => {
@@ -14,6 +15,7 @@ export const getAdmissions = async ({
       ...(admissionStatus && admissionStatus !== "all"
         ? { admissionStatus }
         : {}),
+      ...(programType && programType !== "all" ? { programType } : {}),
       page,
       limit,
     },

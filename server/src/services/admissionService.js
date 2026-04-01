@@ -3,7 +3,7 @@ import Program from "../models/Program.js";
 import generateAdmissionNumber from "../utils/generateAdmissionNumber.js";
 
 export const confirmAdmission = async (applicantId) => {
-  const applicant = await Applicant.findById(applicantId).populate("programId", "name");
+  const applicant = await Applicant.findById(applicantId).populate("programId", "name programType");
   if (!applicant) {
     throw new Error("Application not found");
   }
@@ -28,7 +28,7 @@ export const confirmAdmission = async (applicantId) => {
 
     applicant.admissionNumber = await generateAdmissionNumber({
       year: 2026,
-      level: "UG",
+      level: program.programType,
       programName: program.name,
       quota: applicant.quotaType
     });
@@ -37,6 +37,5 @@ export const confirmAdmission = async (applicantId) => {
   applicant.admissionStatus = "CONFIRMED";
   await applicant.save();
 
-  return Applicant.findById(applicant._id).populate("programId", "name");
+  return Applicant.findById(applicant._id).populate("programId", "name programType branch");
 };
-
