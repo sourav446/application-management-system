@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import * as yup from "yup";
 import { createProgram, updateProgram } from "../../api/programApi";
 
+const RequiredAsterisk = () => <span className="ml-1 text-red-600">*</span>;
+
 const emptyFormState = {
   name: "",
   programType: "UG",
@@ -283,7 +285,10 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
         <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Program Name</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Program Name
+                <RequiredAsterisk />
+              </span>
               <input
                 type="text"
                 name="name"
@@ -298,7 +303,10 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Program Type</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Program Type
+                <RequiredAsterisk />
+              </span>
               <select
                 name="programType"
                 value={formData.programType}
@@ -316,7 +324,10 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
             </label>
 
             <label className="block md:col-span-2">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Branch / Specialization</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Branch / Specialization
+                <RequiredAsterisk />
+              </span>
               <input
                 type="text"
                 name="branchInput"
@@ -347,7 +358,10 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Total Intake</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Total Intake
+                <RequiredAsterisk />
+              </span>
               <input
                 type="number"
                 min="1"
@@ -368,7 +382,10 @@ function CreateProgramModal({ isOpen, onClose, mode = "create", selectedProgram 
             <div className="mt-3 grid gap-4 md:grid-cols-3">
               {["KCET", "COMEDK", "MANAGEMENT"].map((quotaName) => (
                 <label className="block" key={quotaName}>
-                  <span className="mb-2 block text-sm font-medium text-slate-700">{quotaName}</span>
+                  <span className="mb-2 block text-sm font-medium text-slate-700">
+                    {quotaName}
+                    <RequiredAsterisk />
+                  </span>
                   <input
                     type="number"
                     min="0"

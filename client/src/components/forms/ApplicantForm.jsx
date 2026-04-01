@@ -3,6 +3,8 @@ import * as yup from "yup";
 import { getPrograms } from "../../api/programApi";
 import { checkApplicantAvailability } from "../../api/applicantApi";
 
+const RequiredAsterisk = () => <span className="ml-1 text-red-600">*</span>;
+
 const initialFormState = {
   degreeType: "ug",
   name: "",
@@ -254,7 +256,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Name</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Name
+                <RequiredAsterisk />
+              </span>
               <input
                 type="text"
                 name="name"
@@ -286,7 +291,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Phone</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Phone
+                <RequiredAsterisk />
+              </span>
               <input
                 type="text"
                 name="phone"
@@ -303,7 +311,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Category</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Category
+                <RequiredAsterisk />
+              </span>
               <select
                 name="category"
                 value={formData.category}
@@ -322,7 +333,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Entry Type</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Entry Type
+                <RequiredAsterisk />
+              </span>
               <select
                 name="entryType"
                 value={formData.entryType}
@@ -341,7 +355,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Quota Type</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Quota Type
+                <RequiredAsterisk />
+              </span>
               <select
                 name="quotaType"
                 value={formData.quotaType}
@@ -360,7 +377,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Program</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Program
+                <RequiredAsterisk />
+              </span>
               <select
                 name="programId"
                 value={formData.programId}
@@ -381,7 +401,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Branch / Specialization</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Branch / Specialization
+                <RequiredAsterisk />
+              </span>
               <select
                 name="branch"
                 value={formData.branch}
@@ -402,7 +425,10 @@ function ApplicantForm({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Marks</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Marks
+                <RequiredAsterisk />
+              </span>
               <input
                 type="number"
                 min="0"
